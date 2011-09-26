@@ -1,0 +1,144 @@
+<html>
+		<head>
+				<title>Wikipedia Lookup</title>
+				<link href='http://fonts.googleapis.com/css?family=Cabin+Sketch:700' rel='stylesheet' type='text/css'>
+				<script src="script/jquery-1.6.4.js"></script>
+				<script src="script/rx.js"></script>
+				<script src="script/rx.jQuery.js"></script>
+				<script>
+						function searchWikipedia(term){
+								return $.ajaxAsObservable(
+								    { url: "http://en.wikipedia.org/w/api.php",
+											dataType: "jsonp",
+											data: {action: "opensearch",
+													search: term,
+													format: "json"}
+									})
+									.Select(function (d){return d.data[1]; });
+						}
+						$(document).ready(function(){
+								var terms = $("#searchInput").toObservable("keyup")
+								.Select(function(event){return $(event.target).val(); })
+								.Throttle(250);
+								var searchObservable = 
+								terms
+								.Select(searchWikipedia)
+								.Switch();
+
+								searchObservable.Subscribe(
+									function(results) {
+											$("#results").empty();
+											$.each(results, function(_, result){
+													$("#results").append("<li>"+result+"</li>");
+											});
+									},
+									function(exn){
+											$("#error").text(error);
+									}
+								);
+
+								var md = $("#scribble")
+									.toObservable("mousedown")
+									.Select(function(event){return event;});
+		
+								var mm = $("#scribble")
+									.toObservable("mousemove")
+									.Select(function(event){
+										return {x: event.offsetX, y: event.offsetY};
+									});
+		
+								var mu = $("#scribble").toObservable("mouseup");
+		
+								var diffs = mm.Skip(1)
+									.Zip(mm, function(first,second){
+										return {x1: first.x, y1: first.y, x2: second.x, y2: second.y};
+									});
+		
+								var drag = md.SelectMany(function(_){
+										return diffs.TakeUntil(mu);
+									});
+		
+								drag.Subscribe(function(pair){
+										var c = document.getElementById('scribble').getContext('2d');
+										c.strokeStyle = "#F00";
+										c.beginPath();
+										c.moveTo(pair.x1, pair.y1);
+										c.lineTo(pair.x2, pair.y2);
+										c.closePath();
+										c.stroke();
+								});
+						});
+				</script>
+				<style>
+						div.body-stuff{ 
+								margin:10;
+						}
+						.leftBar{
+								float: left;
+								position:relative;
+								margin-top:-10;
+								width: 250;
+								display:inline;
+						}
+						.search{
+								margin: 10;
+								margin-top: 0;
+								border-width:2;
+								border-color:Blue;
+								border-style:solid;
+								padding: 5;
+								min-height: 470;
+								border-radius: 10;
+								background-color: #DDD;
+						}
+						#searchInput{
+								width:100%;
+						}
+						#results {
+								list-style-type:none;
+								padding:0;
+								margin:0;
+						}
+						#results li{
+								margin:5;
+								font-family: Verdana;
+								color: #777;
+						}
+						#scribble{
+								background-color:#DDD;
+								border-color:blue;
+								border-width:2;
+								border-style:solid;
+								border-radius: 10;
+						}
+						h1{ 
+								font-family: 'Cabin Sketch';
+								margin-bottom: 0;
+								margin-top: 10;
+						}
+						h1.sketch{
+								margin-top: 0;
+								font-family: 'Cabin Sketch';
+								margin-left:270;
+								text-align:center;
+								width:600;
+								margin-bottom: 0;
+						}
+				</style>
+		</head>
+		<body>
+				<div class="leftBar">
+						<h1>Search Wikipedia</h1>
+						<div class="search">
+								<input id="searchInput" type="text"/>	
+								<ul id="results"/>
+								<p id="error"/>
+						</div>
+				</div>
+				<div class="body-stuff">
+						<h1 class="sketch">Scribble Here!</h1>
+						<canvas id="scribble" width="600" height="480">
+						</canvas>
+				</div>
+		</body>
+</html>
