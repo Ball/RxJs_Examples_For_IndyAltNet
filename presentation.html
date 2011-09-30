@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head> 
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>My Slides</title> 
+    <link rel="stylesheet" type="text/css" media="screen, projection, print" 
+     href="slidy.css" />
+    <link rel="stylesheet" type="text/css" media="screen, projection, print" 
+     href="style.css" />
+    <script src="showdown.js"></script>
+    <script src="slidy.js"></script>
+    
+</head>
+<body>
+<script type=text/markdown>
+<!--
+
+Reactive Programming
+=
+
+Wanna search Wikipedia?
+
+Without a _go_ button?
+
+-----------------------------------------------------
+
+Listen to the key up event!
+==
+
+Except when it happens too frequently, so you need to throttle
+
+-----------------------------------------------------
+
+But, you can still get out of order responses.
+==
+
+So, cancel the outstanding requests!
+
+-----------------------------------------------------
+#Teh Codez!
+<pre>
+var obs = $("#searchInput").toObservable("keyup")
+    .Select(function(event){
+       return $(event.target).val();
+     })
+    .Throttle(250)
+    .Select(searchWikipedia)
+    .Switch()
+    .Subscribe(
+       function(results){
+           $("#results").empty();
+           $.each(results, function(_,result){
+	       $("#results").append("&lt;li&gt;"+result+"&lt;/li&gt;");
+           })
+       },
+       function(exn){
+	   $("#error").text(error);
+       });
+</pre>
+----------------------------------------------------
+#Here we go!
+
+<a href="app.html"> demo </a>
+
+----------------------------------------------------
+Nice, but how do I coordinate events?
+==
+It ain't called Linq to events for nothing...
+
+----------------------------------------------------
+Scribble
+==
+How does it know?
+<a href="app.html"> demo </a>
+
+-------------------------------------------------------
+What's going on
+==
+
+* when a mouse is down
+* and a mouse moves
+* draw a line between that location and the previous location
+* until the mouse is up
+
+------------------------------------------------------
+This location and the previous?
+==
+
+<pre>
+  var mouseMove = $("#scribble").toObservable("mousemove")
+          .Select(function(event){
+               return {x: event.offsetX, y: event.offsetY};
+          });
+  var segments = mouseMove.Skip(1)
+           .Zip(mouseMove, function(first, second){
+                return {x1: first.x, y1: first.y,
+                        x2: second.x, y2: second.y};
+           });
+
+</pre>
+
+----------------------------------------------------
+Okay, now pick the right segments to draw
+==
+
+<pre>
+  var drawingDisposable = mouseDown.SelectMany(function(_){
+         return segments.TakeUntil(mouseUp);
+      })
+      .Subscribe(drawSeqment);
+</pre>
+
+----------------------------------------------------
+But... I'm done now...
+==
+
+<pre>
+  drawingDisposable.Dispose();
+</pre>
+
+---------------------------------------------------
+Quick nerding on _Operators_
+==
+
+* filter - Where
+* map - Select
+* add - Subscribe
+* scan - 'Aggriggate'
+* merge - Join / SelectMany
+* partition - Publish
+-->
+</script>
+<script>
+var scripts = document.getElementsByTagName('script');
+for (var i = 0; i < scripts.length; i++){
+    var script = scripts[i];
+    if (script.type != 'text/markdown') continue;
+    var md = script.innerHTML.replace(/^\s<!--*/, '')
+        .replace(/-->\s*$/, '');
+    var markup = new Showdown.converter().makeHtml(md);
+    var slides = markup.split('<hr />');
+    for (var j = 0; j < slides.length; j++)
+        document.write('<div class=slide>' + slides[j] + '</div>');
+}
+w3c_slidy.add_listener(document.body, "touchend", w3c_slidy.mouse_button_click);
+</script>
+</body>
+</html>
