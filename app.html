@@ -18,6 +18,7 @@
                                 // and trim down the response
                                 .Select(function (d){
                                         return d.data[1];
+
                                 });
 		}
                 function enableWikipediaSearch(){
@@ -43,7 +44,11 @@
                                 function(results) {
                                         $("#results").empty();
                                         $.each(results, function(_, result){
-                                                $("#results").append("<li>"+result+"</li>");
+                                            $("#results").append("<li><a href=\"http://en.wikipedia.org/wiki/"
+                                                +escape(result)
+                                                +"\">"
+                                                +result
+                                                +"</a></li>");
                                         });
                                 },
                                 // on an error, show that
@@ -54,7 +59,7 @@
                 function enableScribble(){
                         // I'll need mouse down and up
                         var mousedown = $("#scribble").toObservable("mousedown");
-			var mouseup = $("#scribble").toObservable("mouseup");
+			            var mouseup = $("#scribble").toObservable("mouseup");
 		
                         // take the mouse move
                         var mousemove = $("#scribble").toObservable("mousemove")
